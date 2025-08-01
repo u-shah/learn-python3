@@ -1,0 +1,27 @@
+{
+  "subscriptions": [
+    {
+      "subscription_id": "00000000-0000-0000-0000-000000000001",
+      "subscription_name": "Production Subscription",
+      "service_principal_name": "prod-service-connection",
+      "environment": "production"
+    },
+    {
+      "subscription_id": "00000000-0000-0000-0000-000000000002", 
+      "subscription_name": "Development Subscription",
+      "service_principal_name": "dev-service-connection",
+      "environment": "development"
+    },
+    {
+      "subscription_id": "00000000-0000-0000-0000-000000000003",
+      "subscription_name": "Testing Subscription", 
+      "service_principal_name": "test-service-connection",
+      "environment": "testing"
+    }
+  ],
+  "policy_settings": {
+    "policy_name": "RestrictSubnetDeployment",
+    "policy_display_name": "Restrict Resource Deployment to Specific Subnets",
+    "policy_description": "This policy restricts deployment of resources to specific subnets only"
+  }
+}

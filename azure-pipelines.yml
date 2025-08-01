@@ -1,0 +1,93 @@
+trigger:
+  branches:
+    include:
+    - main
+  paths:
+    include:
+    - '*.tf'
+    - '*.yml'
+    - 'policy.json'
+
+pool:
+  vmImage: 'ubuntu-latest'
+
+variables:
+  - group: azure-credentials
+  - name: terraformVersion
+    value: '1.5.0'
+
+stages:
+- stage: Validate
+  displayName: 'Validate Terraform'
+  jobs:
+  - job: Validate
+    displayName: 'Validate Configuration'
+    steps:
+    - task: TerraformInstaller@0
+      displayName: 'Install Terraform'
+      inputs:
+        terraformVersion: $(terraformVersion)
+    
+    - task: TerraformTaskV4@4
+      displayName: 'Terraform Init'
+      inputs:
+        provider: 'azurerm'
+        command: 'init'
+        workingDirectory: '$(System.DefaultWorkingDirectory)'
+        backendServiceArm: '$(serviceConnectionName)'
+        backendAzureRmResourceGroupName: '$(resourceGroupName)'
+        backendAzureRmStorageAccountName: '$(storageAccountName)'
+        backendAzureRmContainerName: '$(containerName)'
+        backendAzureRmKey: 'terraform.tfstate'
+
+- stage: Deploy
+  displayName: 'Deploy Policies'
+  dependsOn: Validate
+  jobs:
+  - deployment: DeployToSubscriptions
+    displayName: 'Deploy to Multiple Subscriptions'
+    strategy:
+      runOnce:
+        deploy:
+          steps:
+          - task: TerraformInstaller@0
+            displayName: 'Install Terraform'
+            inputs:
+              terraformVersion: $(terraformVersion)
+          
+          - task: PowerShell@2
+            displayName: 'Read Policy Configuration'
+            inputs:
+              targetType: 'inline'
+              script: |
+                $policyConfig = Get-Content -Path "$(System.DefaultWorkingDirectory)/policy.json" | ConvertFrom-Json
+                $subscriptions = $policyConfig.subscriptions
+                
+                Write-Host "Found $($subscriptions.Count) subscriptions to deploy to:"
+                foreach ($sub in $subscriptions) {
+                  Write-Host "- $($sub.subscription_name) ($($sub.subscription_id))"
+                }
+                
+                # Convert to JSON and set as pipeline variable
+                $subscriptionsJson = $subscriptions | ConvertTo-Json -Depth 10
+                Write-Host "##vso[task.setvariable variable=subscriptionsJson;isOutput=true]$subscriptionsJson"
+            name: 'ReadConfig'
+          
+          - ${{ each subscription in fromJson(variables['ReadConfig.subscriptionsJson']) }}:
+            - task: TerraformTaskV4@4
+              displayName: 'Deploy to ${{ subscription.subscription_name }}'
+              inputs:
+                provider: 'azurerm'
+                command: 'plan'
+                workingDirectory: '$(System.DefaultWorkingDirectory)'
+                environmentServiceNameAzureRM: '${{ subscription.service_principal_name }}'
+                commandOptions: '-var="subscription_id=${{ subscription.subscription_id }}" -var="tenant_id=$(tenantId)" -var="service_principal_name=${{ subscription.service_principal_name }}" -var="scope=/subscriptions/${{ subscription.subscription_id }}" -var="allowed_subnets=$(allowedSubnets)"'
+            
+            - task: TerraformTaskV4@4
+              displayName: 'Apply to ${{ subscription.subscription_name }}'
+              inputs:
+                provider: 'azurerm'
+                command: 'apply'
+                workingDirectory: '$(System.DefaultWorkingDirectory)'
+                environmentServiceNameAzureRM: '${{ subscription.service_principal_name }}'
+                commandOptions: '-var="subscription_id=${{ subscription.subscription_id }}" -var="tenant_id=$(tenantId)" -var="service_principal_name=${{ subscription.service_principal_name }}" -var="scope=/subscriptions/${{ subscription.subscription_id }}" -var="allowed_subnets=$(allowedSubnets)" -auto-approve'

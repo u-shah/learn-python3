@@ -81,7 +81,7 @@ stages:
                 command: 'plan'
                 workingDirectory: '$(System.DefaultWorkingDirectory)'
                 environmentServiceNameAzureRM: '${{ subscription.service_principal_name }}'
-                commandOptions: '-var="subscription_id=${{ subscription.subscription_id }}" -var="tenant_id=$(tenantId)" -var="service_principal_name=${{ subscription.service_principal_name }}" -var="scope=/subscriptions/${{ subscription.subscription_id }}" -var="allowed_subnets=$(allowedSubnets)"'
+                commandOptions: '-var="subscription_id=${{ subscription.subscription_id }}" -var="tenant_id=$(tenantId)" -var="service_principal_name=${{ subscription.service_principal_name }}" -var="scope=/subscriptions/${{ subscription.subscription_id }}" -var="allowed_subnets=${{ toJson(subscription.allowed_subnets) }}"'
             
             - task: TerraformTaskV4@4
               displayName: 'Apply to ${{ subscription.subscription_name }}'
@@ -90,4 +90,4 @@ stages:
                 command: 'apply'
                 workingDirectory: '$(System.DefaultWorkingDirectory)'
                 environmentServiceNameAzureRM: '${{ subscription.service_principal_name }}'
-                commandOptions: '-var="subscription_id=${{ subscription.subscription_id }}" -var="tenant_id=$(tenantId)" -var="service_principal_name=${{ subscription.service_principal_name }}" -var="scope=/subscriptions/${{ subscription.subscription_id }}" -var="allowed_subnets=$(allowedSubnets)" -auto-approve'
+                commandOptions: '-var="subscription_id=${{ subscription.subscription_id }}" -var="tenant_id=$(tenantId)" -var="service_principal_name=${{ subscription.service_principal_name }}" -var="scope=/subscriptions/${{ subscription.subscription_id }}" -var="allowed_subnets=${{ toJson(subscription.allowed_subnets) }}" -auto-approve'

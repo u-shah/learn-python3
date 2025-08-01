@@ -27,6 +27,16 @@ try {
             Write-Host "  - $($sub.subscription_name) ($($sub.subscription_id))" -ForegroundColor Cyan
             Write-Host "    Service Connection: $($sub.service_principal_name)" -ForegroundColor Gray
             Write-Host "    Environment: $($sub.environment)" -ForegroundColor Gray
+            
+            # Validate allowed subnets
+            if ($sub.allowed_subnets) {
+                Write-Host "    Allowed Subnets: $($sub.allowed_subnets.Count) subnets" -ForegroundColor Gray
+                foreach ($subnet in $sub.allowed_subnets) {
+                    Write-Host "      - $subnet" -ForegroundColor DarkGray
+                }
+            } else {
+                Write-Host "    WARNING: No allowed subnets defined" -ForegroundColor Yellow
+            }
         }
     } else {
         Write-Host "WARNING: No subscriptions found in configuration" -ForegroundColor Yellow

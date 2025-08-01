@@ -54,7 +54,8 @@ The solution allows you to:
    - `resourceGroupName`: Resource group for Terraform state
    - `storageAccountName`: Storage account for Terraform state
    - `containerName`: Container name for Terraform state
-   - `allowedSubnets`: JSON array of allowed subnets (e.g., `["subnet1", "subnet2"]`)
+   
+   **Note**: Allowed subnets are now configured per subscription in the `policy.json` file
 
 ### Step 3: Update Policy Configuration
 
